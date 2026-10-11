@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>MiniCraft VR v6</title>
+<title>MiniCraft VR v7.1</title>
 <style>
 html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#000;
  font-family:monospace;-webkit-user-select:none;user-select:none;touch-action:none;color:#fff}
@@ -50,8 +50,8 @@ body.vr #ctl,body.vr #btnJump,body.vr #stick,body.vr #toast{display:none!importa
 <div id="btnJump">⬆</div>
 <div id="stick"><div id="knob"></div></div>
 <div id="toast"></div>
-<div id="load"><div>⛏ MiniCraft VR v6</div>
- <div style="font-size:13px;color:#8f8">64px текстуры · бамп · мобы · рука · GL-меню в VR</div>
+<div id="load"><div>⛏ MiniCraft VR v7.1</div>
+ <div style="font-size:13px;color:#8f8">64px текстуры · бамп · кватернион-гиро · частицы · GL-меню в VR</div>
  <div id="loadbar"><i></i></div><div id="loadmsg">Генерация мира…</div></div>
 <div id="death"><div>☠ Вы погибли!</div><button class="btn" id="bResp">Возродиться</button></div>
 <div id="menu"><h2>⚙ Настройки (десктоп; в VR — Start: GL-меню в линзах)</h2>
@@ -65,7 +65,7 @@ body.vr #ctl,body.vr #btnJump,body.vr #stick,body.vr #toast{display:none!importa
     <button class="btn" id="bClose">✖ Закрыть</button>
   </div>
   <div style="text-align:center;font-size:13px;color:#8f8" id="gyroStat">Гиро: нет данных</div>
-  <div style="text-align:center;font-size:12px;color:#999">Гиро 1:1 (кватернион, авто-оси). GL-меню в VR: D-pad — фокус, ←→ — значение, A — ок.</div>
+  <div style="text-align:center;font-size:12px;color:#999">Гиро — кватернион 1:1 (крен как у головы). Рейкаст = прицел. GL-меню в VR: D-pad, A, ←→.</div>
 </div>
 <script>
 "use strict";
@@ -133,19 +133,16 @@ function genChunk(cx,cz){
     id=3;
     const cave1=fbm3(wx*0.055/ws,y*0.075,wz*0.055/ws)>0.60;
     const tun=Math.abs(fbm3(wx*0.03/ws+77,y*0.05,wz*0.03/ws-31)-0.5)<0.045&&y<h-6;
-    if(y>2&&cave1||tun)id=0;
+    if(y>2&&(cave1||tun))id=0;
     else{const r=hash3(wx,y,wz);
      if(y<44&&r<0.013)id=11;
      else if(y<32&&r>0.988)id=12;
      else if(y<20&&r>0.9825&&r<0.988)id=36;
-     else if(y<14&&r>0.9975)id=37;}
-   }
+     else if(y<14&&r>0.9975)id=37;}}
    else if(y<h)id=(h<=SEA+2)?((y<h-1)?34:4):2;
    else if(y===h)id=(h<SEA+2)?4:(h>47)?10:1;
    else if(y<=SEA)id=5;
-   d[CI(lx,lz,y)]=id;
-  }
- }
+   d[CI(lx,lz,y)]=id;}}
  for(let lx=2;lx<14;lx++)for(let lz=2;lz<14;lz++){
   const wx=cx*16+lx,wz=cz*16+lz,h=hs[lx*16+lz];
   if(d[CI(lx,lz,h)]!==1||h+8>62)continue;
@@ -158,8 +155,7 @@ function genChunk(cx,cz){
       const i=CI(lx+dx,lz+dz,h+dy);if(d[i]===0)d[i]=7;}}}
    for(let i=1;i<=th2;i++)d[CI(lx,lz,h+i)]=6;
   }else if(t<0.05)d[CI(lx,lz,h+1)]=14;
-  else if(t<0.056)d[CI(lx,lz,h+1)]=t<0.053?15:16;
- }
+  else if(t<0.056)d[CI(lx,lz,h+1)]=t<0.053?15:16;}
  const dm=diffs.get(cx+','+cz);if(dm)for(const[i,v]of dm)d[i]=v;
  return d;}
 function chunkAt(cx,cz){const k=cx+','+cz;let c=chunks.get(k);
@@ -184,7 +180,8 @@ const FACES=[
  {n:[1,0,0], l:0.72,c:[[1,1,1,0,0],[1,1,0,1,0],[1,0,0,1,1],[1,0,1,0,1]]},
  {n:[-1,0,0],l:0.72,c:[[0,1,0,0,0],[0,1,1,1,0],[0,0,1,1,1],[0,0,0,0,1]]}];
 const TRANS=id=>id===0||id===5||id>=14;
-const TILES={1:[0,2,1],2:[2,2,2],3:[3,3,3],4:[4,4,4],5:[5,5,5],6:[7,7,6],7:[8,8,8],8:[9,9,9],
+/* 6:[верх,низ,бока]: кольца на торцах, кора на боках */
+const TILES={1:[0,2,1],2:[2,2,2],3:[3,3,3],4:[4,4,4],5:[5,5,5],6:[6,6,7],7:[8,8,8],8:[9,9,9],
  9:[10,10,10],10:[11,2,12],11:[13,13,13],12:[14,14,14],13:[15,15,15],14:[16],15:[17],16:[18],
  17:[21,21,21],18:[22,22,22],19:[23,23,23],33:[33,33,33],34:[34,34,34],35:[35,35,35],
  36:[36,36,36],37:[37,37,37]};
@@ -237,7 +234,7 @@ function buildMesh(ch){
  if(ch.cntW){ch.vboW=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,ch.vboW);
   gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(wat),gl.STATIC_DRAW);}
  ch.meshed=true;}
-/* ================= АТЛАС 64px (средневековый пиксель-арт) ================= */
+/* ================= АТЛАС 64px ================= */
 const TS=64;
 const atlas=document.createElement('canvas');atlas.width=atlas.height=TS*16;
 const acx=atlas.getContext('2d');
@@ -248,7 +245,6 @@ function tile(t,fn){const im=acx.createImageData(TS,TS),d=im.data;
  acx.putImageData(im,(t&15)*TS,(t>>4)*TS);}
 const V=(b,v,r)=>[0,1,2].map(i=>Math.max(0,Math.min(255,b[i]+(r-0.5)*2*v)));
 const mixc=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
-/* тайлы мира */
 tile(0,(x,y)=>{const m=th(x>>3,y>>3,2);
  let g=m<0.35?[80,128,55]:m>0.75?[106,160,72]:[94,146,64];
  if(th(x,y,1)>0.94)g=[128,178,90];
@@ -278,7 +274,7 @@ tile(8,(x,y)=>{if(th(x,y,20)<0.10)return[0,0,0,0];
  return V(m<0.4?[44,92,30]:m>0.75?[72,128,44]:[56,108,36],14,th(x,y,22));});
 tile(9,(x,y)=>{const b=y>>4;const edge=(y&15)===0||((y&15)===15);
  let base=b%2?[172,134,82]:[160,122,72];
- if(((x+ b*23)&15)===0)base=[140,104,60];
+ if(((x+b*23)&15)===0)base=[140,104,60];
  if(th(x,y,23)>0.96&&!edge)base=[128,94,54];
  return V(edge?[110,80,44]:base,8,th(x,y,24));});
 tile(10,(x,y)=>{const cx=(x>>4),cy=(y>>4);const br=th(cx,cy,25);
@@ -367,7 +363,7 @@ tile(58,(x,y)=>{const m=th(x>>3,y>>3,67);
  if(y<18)c=[70,110,150];
  if(y>56)c=[190,144,104];
  return V(c,8,m);});
-/* пиксельные предметы (16x16 паттерны, x4) */
+/* пиксельные предметы */
 const P_PAT={
  pick:["..........XXXX..",".........XhhHX..","........XhHhhX..",".......XhHXXhX..","......XhHXXhX...",".....XhHX.XhX...","....XhHX..XXX...","...XhHX.........","..XhHX..........",".XsSX...........","XsSX............","XsX.............","XsX.............",".X..............","................","................"],
  axe:[".....XXXX.......","....XhhhHX......","...XhHHhhX......","...XhHXhXX......","...XhHXsX.......","....XX.XsX......",".......XsX......","......XsX.......","......XsX.......",".....XsX........",".....XsX........","....XsX.........","....XsX.........","...XX...........","................","................"],
@@ -399,14 +395,10 @@ patTile(72,P_PAT.axe,STONEP);
 patTile(73,P_PAT.axe,IRONP);
 patTile(74,P_PAT.sword,STONEP);
 patTile(75,P_PAT.sword,IRONP);
-const tileAvg=[];
-for(let t=0;t<80;t++){const d=acx.getImageData((t&15)*TS,(t>>4)*TS,TS,TS).data;
- let r=0,g=0,b=0,n=0;for(let i=0;i<d.length;i+=4)if(d[i+3]>60){r+=d[i];g+=d[i+1];b+=d[i+2];n++;}
- tileAvg[t]=n?[r/n/255,g/n/255,b/n/255]:[1,1,1];}
 /* ================= ПРЕДМЕТЫ ================= */
 const ITEMS={
  1:{n:'Трава',t:1,block:1},2:{n:'Земля',t:2,block:1},3:{n:'Камень',t:3,block:1},
- 4:{n:'Песок',t:4,block:1},6:{n:'Бревно',t:6,block:1},7:{n:'Листва',t:8,block:1},
+ 4:{n:'Песок',t:4,block:1},6:{n:'Бревно',t:7,block:1},7:{n:'Листва',t:8,block:1},
  8:{n:'Доски',t:9,block:1},9:{n:'Кам. кирпич',t:10,block:1},
  10:{n:'Снег',t:11,block:1},
  11:{n:'Уголь. руда',t:13,block:1},12:{n:'Жел. руда',t:14,block:1},
@@ -475,7 +467,6 @@ function prog(vs,fs){const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_S
  const nu=gl.getProgramParameter(p,gl.ACTIVE_UNIFORMS);
  for(let i=0;i<nu;i++){const inf=gl.getActiveUniform(p,i);o.u[inf.name.replace('[0]','')]=gl.getUniformLocation(p,inf.name);}
  return o;}
-/* бамп: нормаль из градиента яркости атласа */
 const pChunk=prog(
 'attribute vec3 aPos;attribute vec2 aUV;attribute float aLight;uniform mat4 uProj,uView,uModel;'+
 'varying vec2 vUV;varying float vL,vD;void main(){vec4 vp=uView*uModel*vec4(aPos,1.0);'+
@@ -500,12 +491,6 @@ const pObj=prog(
 'uniform float uAlpha,uLight,uFogOn,uFN,uFF;uniform vec3 uSunT;'+
 'void main(){float f=uFogOn*clamp((vD-uFN)/(uFF-uFN),0.0,1.0);'+
 'gl_FragColor=vec4(mix(uColor*uLight*uSunT,uFC,f),uAlpha);}');
-const pPoint=prog(
-'attribute vec3 aPos;attribute vec3 aCol;attribute float aSize;uniform mat4 uProj,uView;'+
-'uniform float uScale;varying vec3 vC;void main(){vec4 vp=uView*vec4(aPos,1.0);'+
-'gl_Position=uProj*vp;gl_PointSize=clamp(aSize*uScale/max(0.5,-vp.z),1.0,64.0);vC=aCol;}',
-'precision mediump float;varying vec3 vC;void main(){gl_FragColor=vec4(vC,1.0);}');
-/* ПОСТ: как v5 — центры линз настраиваются (SEP/OX/OY), авто-вписывание */
 const pPost=prog(
 'attribute vec2 aPos;varying vec2 vUV;void main(){vUV=aPos*0.5+0.5;gl_Position=vec4(aPos,0.0,1.0);}',
 'precision mediump float;varying vec2 vUV;uniform sampler2D uTex;'+
@@ -549,7 +534,7 @@ const lineVBO=gl.createBuffer();{const E=[[0,0,0],[1,0,0],[1,0,0],[1,0,1],[1,0,1
  [0,1,0],[1,1,0],[1,1,0],[1,1,1],[1,1,1],[0,1,1],[0,1,1],[0,1,0],
  [0,0,0],[0,1,0],[1,0,0],[1,1,0],[1,0,1],[1,1,1],[0,0,1],[0,1,1]];
  gl.bindBuffer(gl.ARRAY_BUFFER,lineVBO);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(E),gl.STATIC_DRAW);}
-const hudVBO=gl.createBuffer(),objVBO=gl.createBuffer(),ptVBO=gl.createBuffer();
+const hudVBO=gl.createBuffer(),objVBO=gl.createBuffer(),partsVBO=gl.createBuffer();
 const atlasTex=gl.createTexture();
 gl.bindTexture(gl.TEXTURE_2D,atlasTex);
 gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,atlas);
@@ -638,7 +623,10 @@ function updatePlayer(dt){
  regenT+=dt;if(regenT>4&&player.hp<20){player.hp++;regenT=0;}
  flash=Math.max(0,flash-dt*2.5);atkCd-=dt;plcT-=dt;swingT=Math.max(0,swingT-dt*3.2);
  const ex=player.x,ey=player.y+1.62,ez=player.z;
- const cy=Math.cos(player.pitch),f3=[-Math.sin(player.yaw)*cy,Math.sin(player.pitch),-Math.cos(player.yaw)*cy];
+ let f3;
+ if(gyroActive&&qCam){const f=qRot(qCam,0,0,-1);f3=[f[0],f[1],f[2]];}
+ else{const cy=Math.cos(player.pitch);
+  f3=[-Math.sin(player.yaw)*cy,Math.sin(player.pitch),-Math.cos(player.yaw)*cy];}
  const reach=S.reach||5;
  const hit=raycast(ex,ey,ez,f3[0],f3[1],f3[2],reach);
  sel=hit;
@@ -652,11 +640,13 @@ function updatePlayer(dt){
   if(mob&&atkCd<=0){atkCd=0.45;swingT=1;breakP=0;brT=null;
    let dmg=3;if(selIt){if(selIt.dmg)dmg=selIt.dmg;else if(selIt.tool)dmg=2;}
    mob.hp-=dmg;mob.hurtT=0.3;mob.vx+=f3[0]*6;mob.vz+=f3[2]*6;mob.vy+=3.5;
-   sfx(150,0.12,'sawtooth',0.3,0.6);rumble(0.4,70);burst(mob.x,mob.y+0.8,mob.z,19,6);
-   if(mob.hp<=0){mobs.splice(mobs.indexOf(mob),1);burst(mob.x,mob.y+0.6,mob.z,0,14);
+   sfx(150,0.12,'sawtooth',0.3,0.6);rumble(0.4,70);
+   burst(mob.x,mob.y+0.8,mob.z,MOB[mob.type].parts[0].t,5);
+   if(mob.hp<=0){mobs.splice(mobs.indexOf(mob),1);
+    burst(mob.x,mob.y+0.6,mob.z,MOB[mob.type].parts[0].t,12);
     sfx(70,0.3,'square',0.35,0.4);
-    const dl=m.type==='pig'?23:m.type==='sheep'?18:24;
-    const dn=m.type==='zombie'?(Math.random()<0.5?0:1):1+(Math.random()<0.5?1:0);
+    const dl=mob.type==='pig'?23:mob.type==='sheep'?18:24;
+    const dn=mob.type==='zombie'?(Math.random()<0.5?0:1):1+(Math.random()<0.5?1:0);
     if(dn>0)spawnDrop(mob.x,mob.y+0.4,mob.z,dl,dn);}}
   else if(!mob&&hit){
    const bid=getB(hit.x,hit.y,hit.z);
@@ -669,11 +659,10 @@ function updatePlayer(dt){
     breakP+=dt/hard;
     if(swingT<=0)swingT=1;
     crackT-=dt;if(crackT<=0){crackT=0.09;
-     const av=tileAvg[tileFor(bid,2)];
-     burst(hit.x+0.5,hit.y+0.5,hit.z+0.5,-1,2,av);}
+     burst(hit.x+0.5,hit.y+0.5,hit.z+0.5,tileFor(bid,2),1,true);}
     if(breakP>=1){
      setB(hit.x,hit.y,hit.z,0);nsfx(0.12,0.5,700+Math.random()*500);rumble(0.5,90);
-     burst(hit.x+0.5,hit.y+0.5,hit.z+0.5,tileFor(bid,2),12);
+     burst(hit.x+0.5,hit.y+0.5,hit.z+0.5,tileFor(bid,2),14);
      const d=dropOf(bid);if(d)spawnDrop(hit.x+0.5,hit.y+0.3,hit.z+0.5,d,1);
      breakP=0;brT=null;}}}
  }else{breakP=0;brT=null;}
@@ -700,7 +689,7 @@ function raycast(ox,oy,oz,dx,dy,dz,maxD){
   else{d=tz;tz+=tdz;z+=sz;nz=-sz;nx=0;ny=0;}
   if(d>maxD)return null;}
  return null;}
-/* ================= МОБЫ (текстурные) ================= */
+/* ================= МОБЫ ================= */
 const MOB={
  zombie:{hp:20,sp:2.1,hw:0.3,h:1.9,hostile:true,dmg:3,parts:[
   {s:[0.5,0.5,0.5],p:[0,1.75,0],t:50,tf:51,li:1},
@@ -796,16 +785,28 @@ function updateDrops(dt){
    drops.splice(i,1);continue;}
   d.vy-=16*dt;d.vy=Math.max(d.vy,-30);
   moveCollide(d,dt,0.12,0.25,false);}}
-/* ================= ЧАСТИЦЫ ================= */
+/* ================= ЧАСТИЦЫ (текстурные билборды) ================= */
 const parts=[];
-function burst(x,y,z,tileOr,n,col){const av=col||tileAvg[tileOr!==undefined?tileOr:3];
- for(let i=0;i<n;i++)parts.push({x,y,z,
-  vx:(Math.random()-0.5)*4,vy:Math.random()*4+1,vz:(Math.random()-0.5)*4,
-  r:av[0]*(0.7+Math.random()*0.5),g:av[1]*(0.7+Math.random()*0.5),b:av[2]*(0.7+Math.random()*0.5),
-  life:0.5+Math.random()*0.3,sz:0.06+Math.random()*0.06});}
-function updateParts(dt){for(let i=parts.length-1;i>=0;i--){const p=parts[i];
- p.life-=dt;p.vy-=18*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;
- if(p.life<=0)parts.splice(i,1);}}
+let camR=[1,0,0],camU=[0,1,0];
+function burst(x,y,z,tile,n,small){
+ if(parts.length>240)parts.splice(0,parts.length-240);
+ const t=tile&15,tt=tile>>4,k=small?0.7:1;
+ for(let i=0;i<n;i++){
+  const uq=Math.random()*0.72,vq=Math.random()*0.72;
+  const life=0.45+Math.random()*0.4;
+  parts.push({x,y,z,
+   vx:(Math.random()-0.5)*3.6,vy:Math.random()*4.2+1.4,vz:(Math.random()-0.5)*3.6,
+   u0:(t+uq)/16,v0:(tt+vq)/16,us:0.26/16,vs:0.26/16,
+   size:(0.055+Math.random()*0.05)*k,life,max:life});}}
+function updateParts(dt){
+ for(let i=parts.length-1;i>=0;i--){const p=parts[i];
+  p.life-=dt;if(p.life<=0){parts.splice(i,1);continue;}
+  p.vy-=22*dt;p.vx*=Math.pow(0.35,dt);p.vz*=Math.pow(0.35,dt);
+  const nx=p.x+p.vx*dt,ny=p.y+p.vy*dt,nz=p.z+p.vz*dt;
+  if(SOLID(getB(Math.floor(nx),Math.floor(p.y),Math.floor(p.z))))p.vx*=-0.4;else p.x=nx;
+  if(SOLID(getB(Math.floor(p.x),Math.floor(ny),Math.floor(p.z)))){
+   p.vy*=-0.35;p.vx*=0.5;p.vz*=0.5;}else p.y=ny;
+  if(SOLID(getB(Math.floor(p.x),Math.floor(p.y),Math.floor(nz))))p.vz*=-0.4;else p.z=nz;}}
 /* ================= ВВОД ================= */
 const input={mx:0,mz:0,jump:false,atk:false,plc:false,sprint:false};
 const look={dy:0,dp:0};
@@ -813,14 +814,13 @@ const lookVel={y:0,p:0};
 const keys={};let sel=null,brT=null,breakP=0,crackT=0;
 let lastGyro=-1e9;
 let mouseAtk=false,mousePlc=false;
-let menuOpen=false,invOpen=false,glMenu=false,glFocus=0,lastUIClose=0;
+let menuOpen=false,invOpen=false,glMenu=false,glFocus=0,focusIdx=0,lastUIClose=0;
 let padPrev=[];
 const cur={x:480,y:270};
 const UIS={w:960,h:540};
 let uiMat=m4I();
 let uiButtons=[];
 let lastInvTap=0;
-const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
 function clampCur(){cur.x=Math.max(2,Math.min(UIS.w-2,cur.x));cur.y=Math.max(2,Math.min(UIS.h-2,cur.y));}
 function uiClickAt(x,y){for(let i=uiButtons.length-1;i>=0;i--){const b=uiButtons[i];
  if(x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h){b.cb();return true;}}return false;}
@@ -892,12 +892,13 @@ function pollPad(dt){
   if(pr(5))hotbarMove(1);
  }else{
   input.mx=lx;input.mz=-ly;
-  if(S.lookMode!==1){
-   const curve=v=>Math.sign(v)*Math.pow(Math.abs(v),1.4);
-   const tY=curve(-rx)*S.lookSens*1.5,tP=curve(-ry)*S.lookSens*1.3*(S.invertY?-1:1);
+  const curve=v=>Math.sign(v)*Math.pow(Math.abs(v),1.4);
+  const tY=curve(-rx)*S.lookSens*1.5,tP=curve(-ry)*S.lookSens*1.3*(S.invertY?-1:1);
+  if(S.lookMode===0){
    const k=1-Math.exp(-dt*14);
    lookVel.y+=(tY-lookVel.y)*k;lookVel.p+=(tP-lookVel.p)*k;
    look.dy+=lookVel.y*dt;look.dp+=lookVel.p*dt;}
+  else{qStickDy+=tY*dt;qStickDp+=tP*dt;}
   if(pr(4))hotbarMove(-1);
   if(pr(5))hotbarMove(1);
   if(pr(14))hotbarMove(-1);
@@ -906,8 +907,7 @@ function pollPad(dt){
   if(now[6])src.plc=true;
   if(now[0])src.jump=true;
   if(now[10])src.sprint=true;
-  if(now[7])swingT=Math.max(swingT,0.6);
- }
+  if(now[7])swingT=Math.max(swingT,0.6);}
  padPrev=now;
  return src;}
 window.addEventListener('keydown',e=>{keys[e.code]=true;
@@ -922,8 +922,9 @@ cv.addEventListener('click',()=>{if(!('ontouchstart'in window)&&!menuOpen&&!invO
 window.addEventListener('mousemove',e=>{
  if(invOpen){const m=screenToDesign(e.clientX,e.clientY);if(m){cur.x=m.x;cur.y=m.y;clampCur();}return;}
  if(document.pointerLockElement===cv){
-  look.dy+=-e.movementX*0.0022*S.lookSens;
-  look.dp+=-e.movementY*0.0022*S.lookSens*(S.invertY?-1:1);}});
+  const dX=-e.movementX*0.0022*S.lookSens,dY=-e.movementY*0.0022*S.lookSens*(S.invertY?-1:1);
+  if(S.lookMode===0){look.dy+=dX;look.dp+=dY;}
+  else{qStickDy+=dX;qStickDp+=dY;}}});
 window.addEventListener('mousedown',e=>{
  if(invOpen){if(e.button===0)uiClickAt(cur.x,cur.y);return;}
  if(document.pointerLockElement!==cv||menuOpen||glMenu)return;
@@ -931,7 +932,6 @@ window.addEventListener('mousedown',e=>{
 window.addEventListener('mouseup',e=>{if(e.button===0)mouseAtk=false;if(e.button===2)mousePlc=false;});
 window.addEventListener('contextmenu',e=>e.preventDefault());
 window.addEventListener('wheel',e=>{if(!menuOpen&&!invOpen&&!glMenu)hotbarMove(e.deltaY>0?1:-1);});
-/* тач */
 let stickId=-1,stickOx=0,stickOy=0,lookId=-1,lookX=0,lookY=0,lookT0=0,lookMoved=0;
 let tJump=false,tPlcTap=false;
 let curTouch=-1,curLX=0,curLY=0,curMoved=0;
@@ -965,8 +965,10 @@ document.addEventListener('touchmove',e=>{
    input.mx=dx/55;input.mz=-dy/55;}
   else if(t.identifier===lookId){const dx=t.clientX-lookX,dy=t.clientY-lookY;
    lookX=t.clientX;lookY=t.clientY;lookMoved+=Math.abs(dx)+Math.abs(dy);
-   look.dy+=-dx*0.006*S.touchLook;
-   look.dp+=-dy*0.006*S.touchLook*(S.invertY?-1:1);}}},{passive:false});
+   if(S.lookMode===0){look.dy+=-dx*0.006*S.touchLook;
+    look.dp+=-dy*0.006*S.touchLook*(S.invertY?-1:1);}
+   else{qStickDy+=-dx*0.006*S.touchLook;
+    qStickDp+=-dy*0.006*S.touchLook*(S.invertY?-1:1);}}}},{passive:false});
 document.addEventListener('touchend',e=>{
  for(const t of e.changedTouches){
   if(t.identifier===curTouch){curTouch=-1;
@@ -985,7 +987,7 @@ document.addEventListener('touchend',e=>{
 const bj=document.getElementById('btnJump');
 bj.addEventListener('touchstart',e=>{e.preventDefault();tJump=true;},{passive:false});
 bj.addEventListener('touchend',()=>{tJump=false;});
-/* ===== ГИРО: абсолютный кватернион (Cardboard/three.js метод) ===== */
+/* ===== ГИРО: кватернион, рендер и рейкаст из одного кватерниона ===== */
 const D2R=Math.PI/180;
 const qX=a=>[Math.sin(a/2),0,0,Math.cos(a/2)];
 const qY=a=>[0,Math.sin(a/2),0,Math.cos(a/2)];
@@ -997,7 +999,28 @@ function qMul(a,b){
         aw*by-ax*bz+ay*bw+az*bx,
         aw*bz+ax*by-ay*bx+az*bw,
         aw*bw-ax*bx-ay*by-az*bz];}
-let devQ=null,gyroAnchor=false,gyroPY=0,gyroPP=0;
+const qConj=q=>[-q[0],-q[1],-q[2],q[3]];
+function qAxisAngle(ax,ay,az,a){const s=Math.sin(a/2);return[ax*s,ay*s,az*s,Math.cos(a/2)];}
+function qRot(q,vx,vy,vz){
+ const x=q[0],y=q[1],z=q[2],w=q[3];
+ const tx=2*(y*vz-z*vy),ty=2*(z*vx-x*vz),tz=2*(x*vy-y*vx);
+ return[vx+w*tx+(y*tz-z*ty),vy+w*ty+(z*tx-x*tz),vz+w*tz+(x*ty-y*tx)];}
+function qViewMat(ex,ey,ez,q){
+ const x=q[0],y=q[1],z=q[2];
+ const R00=1-2*(y*y+z*z),R01=2*(x*y-q[3]*z),R02=2*(x*z+q[3]*y),
+       R10=2*(x*y+q[3]*z),R11=1-2*(x*x+z*z),R12=2*(y*z-q[3]*x),
+       R20=2*(x*z-q[3]*y),R21=2*(y*z+q[3]*x),R22=1-2*(x*x+y*y);
+ const m=new Float32Array(16);
+ m[0]=R00;m[1]=R01;m[2]=R02;
+ m[4]=R10;m[5]=R11;m[6]=R12;
+ m[8]=R20;m[9]=R21;m[10]=R22;
+ m[12]=-(R00*ex+R10*ey+R20*ez);
+ m[13]=-(R01*ex+R11*ey+R21*ez);
+ m[14]=-(R02*ex+R12*ey+R22*ez);
+ m[15]=1;
+ return m;}
+let devQ=null,qCorr=null,qCam=null,gyroActive=false;
+let qStickDy=0,qStickDp=0;
 window.addEventListener('deviceorientation',e=>{
  if(e.alpha==null&&e.beta==null&&e.gamma==null)return;
  lastGyro=performance.now();
@@ -1008,19 +1031,26 @@ window.addEventListener('deviceorientation',e=>{
  q=qMul(q,Q_FLIP);
  q=qMul(q,qZ(-orient));
  devQ=q;});
-window.addEventListener('orientationchange',()=>{gyroAnchor=false;});
+window.addEventListener('orientationchange',()=>{qCorr=null;qCam=null;});
 function applyGyro(){
- if(!devQ||S.lookMode===0){gyroAnchor=false;return;}
- const x=devQ[0],y=devQ[1],z=devQ[2],w=devQ[3];
- const fx=-2*(x*z+w*y), fy=2*(w*x-y*z), fz=2*(x*x+y*y)-1;
- const yaw=Math.atan2(-fx,-fz);
- const pitch=Math.asin(Math.max(-1,Math.min(1,fy)));
- if(!gyroAnchor){gyroPY=yaw;gyroPP=pitch;gyroAnchor=true;return;}
- let dy=yaw-gyroPY;if(dy>Math.PI)dy-=2*Math.PI;if(dy<-Math.PI)dy+=2*Math.PI;
- const dp=pitch-gyroPP;
- gyroPY=yaw;gyroPP=pitch;
- look.dy+=(S.gyroYawInv?-1:1)*dy;
- look.dp+=(S.gyroPitchInv?-1:1)*dp;}
+ if(S.lookMode===0||!devQ){
+  qCorr=null;qCam=null;gyroActive=false;
+  if(qStickDy||qStickDp){ /* нет гиро на устройстве — стик работает по-старому */
+   look.dy+=qStickDy;look.dp+=qStickDp;qStickDy=0;qStickDp=0;}
+  return;}
+ if(!qCorr){qCorr=qMul(qMul(qY(player.yaw),qX(player.pitch)),qConj(devQ));}
+ qCam=qMul(qCorr,devQ);
+ gyroActive=true;
+ if(qStickDy||qStickDp){
+  if(qStickDy)qCam=qMul(qY(qStickDy),qCam);
+  if(qStickDp){
+   const r=qRot(qCam,1,0,0);
+   qCam=qMul(qAxisAngle(r[0],r[1],r[2],qStickDp),qCam);}
+  qCorr=qMul(qCam,qConj(devQ));
+  qStickDy=0;qStickDp=0;}
+ const f=qRot(qCam,0,0,-1);
+ player.yaw=Math.atan2(-f[0],-f[2]);
+ player.pitch=Math.asin(Math.max(-1,Math.min(1,f[1])));}
 function reqGyro(){
  try{
   if(typeof DeviceOrientationEvent!=='undefined'&&DeviceOrientationEvent.requestPermission){
@@ -1034,13 +1064,13 @@ function reqGyro(){
 setInterval(()=>{
  const el=document.getElementById('gyroStat');
  el.textContent=(performance.now()-lastGyro<1000)
-  ?'Гиро: ✓ активен (1:1, авто-оси)':'Гиро: нет данных (нужен HTTPS + доступ)';
+  ?'Гиро: ✓ активен (кватернион, 1:1)':'Гиро: нет данных (нужен HTTPS + доступ)';
 },1000);
 /* ================= GL UI ================= */
 const DIGITS={'0':[7,5,5,5,7],'1':[2,6,2,2,7],'2':[7,1,7,4,7],'3':[7,1,3,1,7],
  '4':[5,5,7,1,1],'5':[7,4,7,1,7],'6':[7,4,7,5,7],'7':[7,1,1,2,2],
  '8':[7,5,7,5,7],'9':[7,5,7,1,7]};
-const LET3={A:[7,5,7,5,5],B:[6,5,6,5,6],C:[7,4,4,4,7],D:[6,5,5,5,6],E:[7,4,6,4,7],
+const LET3={A:[7,5,7,5,5],B:[6,5,5,5,6],C:[7,4,4,4,7],D:[6,5,5,5,6],E:[7,4,6,4,7],
  F:[7,4,6,4,4],G:[7,4,5,5,7],H:[5,5,7,5,5],I:[7,2,2,2,7],J:[1,1,1,5,7],
  K:[5,6,4,6,5],L:[4,4,4,4,7],M:[5,7,7,5,5],N:[5,7,7,7,5],O:[7,5,5,5,7],
  P:[7,5,7,4,4],Q:[7,5,5,7,1],R:[7,5,6,5,5],S:[7,4,7,1,7],T:[7,2,2,2,2],
@@ -1123,7 +1153,6 @@ const inRect=(b,x,y)=>x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h;
 /* ================= HUD ================= */
 function drawHUD(){
  const W=UIS.w,H=UIS.h,u=H/540*(S.uiScale||1);
- /* прицел: центр глаза-FBO = оптический центр линзы (см. пост-шейдер: fit-центр) */
  uiRect(W/2-11*u,H/2-1.3*u,22*u,2.6*u,1,1,1,0.9);
  uiRect(W/2-1.3*u,H/2-11*u,2.6*u,22*u,1,1,1,0.9);
  uiRect(W/2-1.6*u,H/2-1.6*u,3.2*u,3.2*u,1,1,1,0.95);
@@ -1206,7 +1235,7 @@ function drawInv(){
   else if(hov)uiRectBorder(x,hbY,slot,slot,1.5*u,1,1,0,0.85);
   if(id&&ITEMS[id])pushIcon(x+3*u,hbY+3*u,slot-6*u,ITEMS[id].t);
   uiButtons.push({x,y:hbY,w:slot,h:slot,cb:(ii=>()=>{selSlot=ii;})(i2)});}}
-/* ================= GL-МЕНЮ (в линзах) ================= */
+/* ================= GL-МЕНЮ ================= */
 function gmDec(st){const s=String(st);return s.includes('.')?s.split('.')[1].length:0;}
 function gmAdj(row,dir){
  let v=S[row.k];
@@ -1216,7 +1245,8 @@ function gmAdj(row,dir){
  if(row.on)row.on();}
 const GM_ROWS=[
  {lab:'RESUME',a:()=>closeGlMenu()},
- {lab:'LOOK',get:()=>S.lookMode,min:0,max:2,st:1,k:'lookMode',fmt:v=>['STK','GYR','BTH'][v]},
+ {lab:'LOOK',get:()=>S.lookMode,min:0,max:2,st:1,k:'lookMode',fmt:v=>['STK','GYR','BTH'][v],
+  on:()=>{qCorr=null;qCam=null;gyroActive=false;}},
  {lab:'SENS',k:'lookSens',min:0.5,max:6,st:0.1},
  {lab:'FOV',k:'fov',min:50,max:120,st:1},
  {lab:'UI',k:'uiScale',min:0.7,max:1.8,st:0.05},
@@ -1235,8 +1265,6 @@ const GM_ROWS=[
  {lab:'WSCALE',k:'wscale',min:0.5,max:3,st:0.1,on:applyWorldScaleSafe},
  {lab:'SOUND',t:1,k:'sound'},
  {lab:'INVY',t:1,k:'invertY'},
- {lab:'GYRY',t:1,k:'gyroYawInv'},
- {lab:'GYRP',t:1,k:'gyroPitchInv'},
  {lab:'CREA',t:1,k:'creative'},
  {lab:'GYRO',a:()=>reqGyro()},
  {lab:'RSPN',a:()=>{dead=false;player.hp=20;
@@ -1347,7 +1375,15 @@ function render(){
  const rx=Math.cos(player.yaw),rz=-Math.sin(player.yaw);
  for(const e of eyes){
   const off=e*ipdM/2;
-  const view=viewMat(player.x+rx*off,player.y+1.62,player.z+rz*off,player.yaw,player.pitch);
+  let view;
+  if(gyroActive&&qCam){
+   const r=qRot(qCam,1,0,0);
+   view=qViewMat(player.x+r[0]*off,player.y+1.62+r[1]*off,player.z+r[2]*off,qCam);
+  }else view=viewMat(player.x+rx*off,player.y+1.62,player.z+rz*off,player.yaw,player.pitch);
+  if(gyroActive&&qCam){camR=qRot(qCam,1,0,0);camU=qRot(qCam,0,1,0);}
+  else{const cp2=Math.cos(player.pitch),sp2=Math.sin(player.pitch),
+   cyw=Math.cos(player.yaw),syw=Math.sin(player.yaw);
+   camR=[cyw,0,-syw];camU=[syw*sp2,cp2,cyw*sp2];}
   gl.clearColor(fogC[0],fogC[1],fogC[2],1);
   gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
   gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.disable(gl.CULL_FACE);
@@ -1367,11 +1403,10 @@ function render(){
    vis.push([d,c]);}
   vis.sort((a,b)=>a[0]-b[0]);
   for(const[,c]of vis)if(c.cnt){gl.bindBuffer(gl.ARRAY_BUFFER,c.vbo);bindChunkAttrs();gl.drawArrays(gl.TRIANGLES,0,c.cnt);}
-  /* мобы: текстурные части */
   for(const m of mobs){const def=MOB[m.type];
    const base=m4Mul(m4T(m.x,m.y,m.z),m4RY(m.yaw));
    const hk=Math.max(0,m.hurtT/0.3);
-   gl.uniform3f(pChunk.u.uTint,1+hk*0,1-hk*0.65,1-hk*0.65);
+   gl.uniform3f(pChunk.u.uTint,1,1-hk*0.65,1-hk*0.65);
    for(const p of def.parts){
     let mdl;
     if(p.leg||p.arm){const sw=p.leg?Math.sin(m.anim)*0.55*(p.ph||1):-1.45+Math.sin(m.anim*0.7)*0.12;
@@ -1390,19 +1425,26 @@ function render(){
     gl.uniformMatrix4fv(pChunk.u.uModel,false,mdl);
     gl.bindBuffer(gl.ARRAY_BUFFER,dm.vbo);bindChunkAttrs();
     gl.drawArrays(gl.TRIANGLES,0,dm.cnt);}}
-  if(parts.length){gl.useProgram(pPoint.p);
-   const pa=new Float32Array(parts.length*7);let pi=0;
-   for(const p of parts){pa[pi++]=p.x;pa[pi++]=p.y;pa[pi++]=p.z;
-    pa[pi++]=p.r;pa[pi++]=p.g;pa[pi++]=p.b;pa[pi++]=p.sz*100;}
-   gl.bindBuffer(gl.ARRAY_BUFFER,ptVBO);
-   gl.bufferData(gl.ARRAY_BUFFER,pa,gl.DYNAMIC_DRAW);
-   gl.enableVertexAttribArray(pPoint.a.aPos);gl.vertexAttribPointer(pPoint.a.aPos,3,gl.FLOAT,false,28,0);
-   gl.enableVertexAttribArray(pPoint.a.aCol);gl.vertexAttribPointer(pPoint.a.aCol,3,gl.FLOAT,false,28,12);
-   gl.enableVertexAttribArray(pPoint.a.aSize);gl.vertexAttribPointer(pPoint.a.aSize,1,gl.FLOAT,false,28,24);
-   gl.uniformMatrix4fv(pPoint.u.uProj,false,proj);
-   gl.uniformMatrix4fv(pPoint.u.uView,false,view);
-   gl.uniform1f(pPoint.u.uScale,fboH*0.7);
-   gl.drawArrays(gl.POINTS,0,parts.length);}
+  if(parts.length){
+   gl.useProgram(pChunk.p);
+   chunkUniforms(proj,view,fogC,far,fnear,uw);
+   gl.uniformMatrix4fv(pChunk.u.uModel,false,m4I());
+   gl.uniform1f(pChunk.u.uBump,0);gl.uniform1f(pChunk.u.uAmb,0.2);
+   const qx=camR[0],qy=camR[1],qz=camR[2],uxv=camU[0],uyv=camU[1],uzv=camU[2];
+   const q=[];
+   for(const p of parts){
+    const kk=p.life/p.max,sz=p.size*(0.45+0.55*kk);
+    const rxv=qx*sz,ryv=qy*sz,rzv=qz*sz,ax=uxv*sz,ay=uyv*sz,az=uzv*sz;
+    const u1=p.u0+p.us,v1=p.v0+p.vs;
+    const A=[p.x-rxv+ax,p.y-ryv+ay,p.z-rzv+az,p.u0,p.v0];
+    const B=[p.x+rxv+ax,p.y+ryv+ay,p.z+rzv+az,u1,p.v0];
+    const C=[p.x+rxv-ax,p.y+ryv-ay,p.z+rzv-az,u1,v1];
+    const D=[p.x-rxv-ax,p.y-ryv-ay,p.z-rzv-az,p.u0,v1];
+    for(const v of[A,B,C,A,C,D])q.push(v[0],v[1],v[2],v[3],v[4],0.95);}
+   gl.bindBuffer(gl.ARRAY_BUFFER,partsVBO);
+   gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(q),gl.DYNAMIC_DRAW);
+   bindChunkAttrs();
+   gl.drawArrays(gl.TRIANGLES,0,q.length/6);}
   gl.useProgram(pChunk.p);
   gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
   gl.uniformMatrix4fv(pChunk.u.uModel,false,m4I());
@@ -1423,11 +1465,10 @@ function render(){
     gl.uniformMatrix4fv(pObj.u.uModel,false,
      m4Mul(m4T(sel.x+0.5,sel.y+0.5,sel.z+0.5),m4S(s2,s2,s2)));
     gl.drawArrays(gl.TRIANGLES,0,36);}}
-  /* рука + предмет */
   if(!invOpen&&!glMenu){
    gl.useProgram(pChunk.p);
    chunkUniforms(proj,m4I(),fogC,far,fnear,uw);
-   gl.uniform1f(pChunk.u.uBump,0.35);
+   gl.uniform1f(pChunk.u.uBump,0.35);gl.uniform1f(pChunk.u.uAmb,0.16);
    const sw=Math.sin(Math.min(1,swingT)*Math.PI);
    const bobY=Math.sin(bobT*2)*0.02,bobX=Math.cos(bobT)*0.015;
    const selId=hotbar[selSlot],selIt=ITEMS[selId];
@@ -1447,7 +1488,7 @@ function render(){
     gl.drawArrays(gl.TRIANGLES,0,pm.cnt);}
    else{
     const mdl=m4Mul(m4T(0.5+bobX,-0.5+bobY-sw*0.18,-0.9),
-      m4Mul(m4RY(-0.4+sw*0.8),m4Mul(m4RX(-0.4-sw*1.1),m4Mul(m4S(0.24,0.24,0.8),m4T(0,0,0)))));
+      m4Mul(m4RY(-0.4+sw*0.8),m4Mul(m4RX(-0.4-sw*1.1),m4S(0.24,0.24,0.8))));
     gl.uniformMatrix4fv(pChunk.u.uModel,false,mdl);
     const pm=partMesh(58,0);
     gl.bindBuffer(gl.ARRAY_BUFFER,pm.vbo);bindChunkAttrs();
@@ -1464,7 +1505,6 @@ function render(){
    gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
    gl.drawArrays(gl.TRIANGLES,0,6);
    gl.enable(gl.DEPTH_TEST);gl.disable(gl.BLEND);}
-  /* UI в каждый глаз */
   gl.disable(gl.DEPTH_TEST);gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
   drawHUD();
@@ -1497,7 +1537,7 @@ function render(){
  gl.vertexAttribPointer(pPost.a.aPos,2,gl.FLOAT,false,0,0);
  gl.drawArrays(gl.TRIANGLES,0,6);
  gl.enable(gl.DEPTH_TEST);}
-/* ================= ЧАНКИ ================= */
+/* ================= ЧАНКИ (генерация по бюджету времени) ================= */
 let loading=true;
 function updateChunks(){
  const R=S.dist,pcx=Math.floor(player.x/16),pcz=Math.floor(player.z/16);
@@ -1506,8 +1546,10 @@ function updateChunks(){
   const c=chunkAt(pcx+dx,pcz+dz);
   if(!c.meshed)need.push([dx*dx+dz*dz,c]);}
  need.sort((a,b)=>a[0]-b[0]);
- let budget=loading?4:2;
- for(const[,c]of need){if(budget--<=0)break;buildMesh(c);}
+ const t0=performance.now(),lim=loading?40:7;
+ for(const[,c]of need){
+  buildMesh(c);
+  if(performance.now()-t0>lim)break;}
  if(loading){
   const total=(2*R+1)**2;
   if(need.length===0){loading=false;document.getElementById('load').style.display='none';saveWorld();}
@@ -1549,7 +1591,7 @@ function applyWorldScale(){
 setInterval(()=>{if(!loading)saveWorld();},12000);
 window.addEventListener('pagehide',saveWorld);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveWorld();});
-/* ================= DOM-МЕНЮ (десктоп) ================= */
+/* ================= DOM-МЕНЮ ================= */
 const $=id=>document.getElementById(id);
 function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';
  clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',2200);}
@@ -1566,7 +1608,8 @@ function openInv(){invOpen=true;updUIState();}
 function closeInv(){invOpen=false;updUIState();}
 function toggleVR(){S.vr=!S.vr;document.body.classList.toggle('vr',S.vr);
  toast(S.vr?'🥽 VR: Зум=1.0. Start/Y — GL-меню. Двойной тап — инвентарь':'VR выключен');saveS();}
-function cycleLook(){S.lookMode=(S.lookMode+1)%3;
+function cycleLook(){qCorr=null;qCam=null;gyroActive=false;
+ S.lookMode=(S.lookMode+1)%3;
  toast('Обзор: '+['Стик','Гиро 1:1','Стик+Гиро'][S.lookMode]);saveS();updTg();}
 function fs(){try{
  if(document.fullscreenElement||document.webkitFullscreenElement)
@@ -1651,7 +1694,7 @@ function frame(t){requestAnimationFrame(frame);
   tPlcTap=false;
  }else{
   input.mx=0;input.mz=0;input.atk=input.plc=input.jump=false;prevPlc=false;
-  gyroAnchor=false;
+  qCorr=null;qCam=null;gyroActive=false;
  }
  updateChunks();
  render();}
